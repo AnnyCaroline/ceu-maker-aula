@@ -79,6 +79,7 @@ output (int,int)              GRAPHICS_DRAW_PIXEL;
 output (int,int,int,int)      GRAPHICS_DRAW_LINE;
 output (int,int,int,int)      GRAPHICS_DRAW_RECT;
 output (int,int,text)         GRAPHICS_DRAW_TEXT;
+output (int,int,int)          GRAPHICS_DRAW_INT;
 output (text)                 GRAPHICS_WRITE;
 output (text)                 GRAPHICS_WRITELN;
 output (text)                 GRAPHICS_SCREENSHOT;
@@ -121,6 +122,7 @@ native/pre do
     ##define ceu_callback_output_GRAPHICS_DRAW_RECT(ps,trace) ceu_pico_callback_output_GRAPHICS_DRAW_RECT(ps,trace)
     ##define ceu_callback_output_GRAPHICS_DRAW_BMP(ps,trace) ceu_pico_callback_output_GRAPHICS_DRAW_BMP(ps,trace)
     ##define ceu_callback_output_GRAPHICS_DRAW_TEXT(ps,trace) ceu_pico_callback_output_GRAPHICS_DRAW_TEXT(ps,trace)
+    ##define ceu_callback_output_GRAPHICS_DRAW_INT(ps,trace) ceu_pico_callback_output_GRAPHICS_DRAW_INT(ps,trace)
     ##define ceu_callback_output_GRAPHICS_WRITE(ps,trace) ceu_pico_callback_output_GRAPHICS_WRITE(ps,trace)
     ##define ceu_callback_output_GRAPHICS_WRITELN(ps,trace) ceu_pico_callback_output_GRAPHICS_WRITELN(ps,trace)
     ##define ceu_callback_output_SOUND_SET_VOLUME(ps,trace) ceu_pico_callback_output_SOUND_SET_VOLUME(ps,trace)
@@ -152,6 +154,7 @@ native/pre do
     int ceu_pico_callback_output_GRAPHICS_DRAW_RECT (void* ps, tceu_trace trace);
     int ceu_pico_callback_output_GRAPHICS_DRAW_BMP (void* ps, tceu_trace trace);
     int ceu_pico_callback_output_GRAPHICS_DRAW_TEXT (void* ps, tceu_trace trace);
+    int ceu_pico_callback_output_GRAPHICS_DRAW_INT (void* ps, tceu_trace trace);
     int ceu_pico_callback_output_GRAPHICS_WRITE (void* ps, tceu_trace trace);
     int ceu_pico_callback_output_GRAPHICS_WRITELN (void* ps, tceu_trace trace);
     int ceu_pico_callback_output_SOUND_SET_VOLUME (void* ps, tceu_trace trace);
@@ -553,6 +556,37 @@ native/pos do
         return 0;
     }
 
+    int ceu_pico_callback_output_GRAPHICS_DRAW_INT (void* ps, tceu_trace trace) {
+        tceu_output_GRAPHICS_DRAW_INT* ps_ = (tceu_output_GRAPHICS_DRAW_INT*) ps;
+
+        u8 r, g, b;
+        SDL_GetRenderDrawColor(REN, &r,&g,&b, NULL);
+
+        char textBuffer[64];
+        sprintf(textBuffer, "%d", ps_->_3);
+
+        SDL_Surface* sfc = TTF_RenderText_Blended(FNT, textBuffer , (SDL_Color){r,g,b,0xFF});
+        ceu_assert_ex(sfc != NULL, "draw error", trace);
+        SDL_Texture* tex = SDL_CreateTextureFromSurface(REN, sfc);
+        ceu_assert_ex(tex != NULL, "draw error", trace);
+
+        SDL_Rect rct;
+
+        // SCALE
+        rct.w = sfc->w * GRAPHICS_SET_SCALE_W;
+        rct.h = sfc->h * GRAPHICS_SET_SCALE_H;
+
+        // ANCHOR
+        rct.x = GRAPHICS_ANCHOR_X(X(ps_->_1),rct.w);
+        rct.y = GRAPHICS_ANCHOR_Y(Y(ps_->_2),rct.h);
+
+        SDL_RenderCopy(REN, tex, NULL, &rct);
+        WINDOW_Present();
+
+        SDL_DestroyTexture(tex);
+        SDL_FreeSurface(sfc);
+        return 0;
+    }
 
     int ceu_pico_callback_output_GRAPHICS_DRAW_TEXT (void* ps, tceu_trace trace) {
         tceu_output_GRAPHICS_DRAW_TEXT* ps_ = (tceu_output_GRAPHICS_DRAW_TEXT*) ps;
