@@ -1,7 +1,13 @@
 {srand(time(NULL));}
 
 code/call Random_Int(var int lower, var int upper) -> int do
-    escape (_rand() % (upper - lower + 1)) + lower; 
+    var int tmp=0;
+    {
+        do{
+            @tmp = (rand() % (@upper - @lower + 1)) + @lower;
+        }while(@tmp==5 || @tmp==6);
+    }
+    escape tmp;
 end
 
 code/call Random_Point_In_Square(var int min_x, var int min_y, var int max_x, var int max_y) -> Point do
